@@ -1,32 +1,13 @@
 describe('Home Page', () => {
 
-  // 🔴 1. Validate proper error handling (no crash expected)
-  it('should display error message when API fails', () => {
-    cy.intercept('GET', '**/countries', {
-      statusCode: 404
-    }).as('getCountries')
+  // 🔴 1. HTTP error (404)
+it('should show countries error when there are no countries in the API', () => {
 
-    cy.visit('/home')
-
-    cy.wait('@getCountries')
-
-    cy.contains('Error fetching').should('be.visible')
-  })
-
-
-  // 🟢 2. Validate success scenario
-it('should display countries when API succeeds', () => {
-
-  // ✅ Mock countries
   cy.intercept('GET', '**/countries', {
-    statusCode: 200,
-  body: [
-    {
-      name: 'Colombia' // ✅ simple string
-    }]
+    statusCode: 404
   }).as('getCountries')
 
-  // ✅ Mock activities (THIS WAS MISSING)
+  // keep other API stable
   cy.intercept('GET', '**/activities', {
     statusCode: 200,
     body: []
@@ -37,7 +18,53 @@ it('should display countries when API succeeds', () => {
   cy.wait('@getCountries')
   cy.wait('@getActivities')
 
-  cy.contains('Colombia').should('be.visible')
+  cy.contains('404 COUNTRIES NOT FOUND').should('be.visible')
 })
+
+
+  // 🌐 2. Network failure
+  it('should handle backend failure (network error)', () => {
+
+    cy.intercept('GET', '**/countries', {
+      forceNetworkError: true
+    }).as('getCountries')
+
+    cy.intercept('GET', '**/activities', {
+      statusCode: 200,
+      body: []
+    }).as('getActivities')
+
+    cy.visit('/home')
+
+    cy.wait('@getCountries')
+    cy.wait('@getActivities')
+
+    cy.contains('Error fetching countries').should('be.visible')
+    cy.contains('Colombia').should('not.exist')
+  })
+
+
+  // 🟢 3. Success
+  it('should display countries when API succeeds', () => {
+
+    cy.intercept('GET', '**/countries', {
+      statusCode: 200,
+      body: [
+        { name: 'Colombia' }
+      ]
+    }).as('getCountries')
+
+    cy.intercept('GET', '**/activities', {
+      statusCode: 200,
+      body: []
+    }).as('getActivities')
+
+    cy.visit('/home')
+
+    cy.wait('@getCountries')
+    cy.wait('@getActivities')
+
+    cy.contains('Colombia').should('be.visible')
+  })
 
 })
