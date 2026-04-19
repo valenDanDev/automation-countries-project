@@ -1,3 +1,5 @@
+describe('Adding Filters', () => {
+
 it('should filter countries by continent', () => {
 
   cy.intercept('GET', '**/countries', {
@@ -91,4 +93,6 @@ it('should sort countries by name (ascending)', () => {
     expect(names[1]).to.eq('Brazil')
     expect(names[2]).to.eq('Colombia')
   })
+})
+
 })
