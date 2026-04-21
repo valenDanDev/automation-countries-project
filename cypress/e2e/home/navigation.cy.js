@@ -1,6 +1,15 @@
 describe('Country Detail Navigation', () => {
 
-  it('should navigate and display correct country details', () => {
+  // 🔹 helper to navigate
+  const goToDetail = () => {
+    cy.contains('h3', 'Colombia')
+      .parents('[class*="card_container"]')
+      .within(() => {
+        cy.contains(/more/i).click()
+      })
+  }
+
+  beforeEach(() => {
 
     cy.intercept('GET', '**/countries', {
       statusCode: 200,
@@ -14,18 +23,18 @@ describe('Country Detail Navigation', () => {
       body: []
     }).as('getActivities')
 
-    // 👇 intercept detail endpoint (IMPORTANT)
+  })
+
+
+  it('should navigate and display correct country details', () => {
+
     cy.intercept('GET', '**/countries/country/*', {
       statusCode: 200,
       body: [
         {
           id: 'COL',
           name: 'colombia',
-          image: 'https://flagcdn.com/w320/co.png',
-          continent: 'south america',
           capital: 'bogotá',
-          subregion: 'americas',
-          area: 1141748,
           population: 53057212,
           activities: []
         }
@@ -37,25 +46,73 @@ describe('Country Detail Navigation', () => {
     cy.wait('@getCountries')
     cy.wait('@getActivities')
 
-    cy.contains('h3', 'Colombia')
-      .parents('[class*="card_container"]')
-      .within(() => {
-        cy.contains(/more/i).click()
-      })
+    goToDetail()
 
-    cy.url().should('include', '/countries/')
+    cy.url().should('include', '/countries/country/COL')
 
-    // 👇 WAIT for detail API
     cy.wait('@getCountryDetail')
 
-// wait for render
-cy.contains('Loading').should('not.exist')
+    cy.contains(/loading/i).should('not.exist')
 
-// validate UI
-cy.contains('h3', /colombia/i).should('be.visible')
-cy.contains(/code:\s*col/i).should('be.visible')
-cy.contains(/capital:\s*bogotá/i).should('be.visible')
-cy.contains(/population/i).should('be.visible')
+    cy.contains('h3', /colombia/i).should('be.visible')
+    cy.contains(/code:\s*col/i).should('be.visible')
+    cy.contains(/capital:\s*bogotá/i).should('be.visible')
+    cy.contains(/population/i).should('be.visible')
+  })
+
+
+  it('should show message when there are no activities', () => {
+
+    cy.intercept('GET', '**/countries/country/*', {
+      statusCode: 200,
+      body: [
+        {
+          id: 'COL',
+          name: 'colombia',
+          activities: []
+        }
+      ]
+    }).as('getCountryDetail')
+
+    cy.visit('/home')
+
+    cy.wait('@getCountries')
+    cy.wait('@getActivities')
+
+    goToDetail()
+
+    cy.wait('@getCountryDetail')
+
+    cy.contains(/there are no activities/i).should('be.visible')
+  })
+
+
+  it('should show activities when they exist', () => {
+
+    cy.intercept('GET', '**/countries/country/*', {
+      statusCode: 200,
+      body: [
+        {
+          id: 'COL',
+          name: 'colombia',
+          activities: [
+            { id: 1, name: 'Soccer' } ,{ id: 1, name: 'Music' }
+          ]
+        }
+      ]
+    }).as('getCountryDetail')
+
+    cy.visit('/home')
+
+    cy.wait('@getCountries')
+    cy.wait('@getActivities')
+
+    goToDetail()
+
+    cy.wait('@getCountryDetail')
+
+    cy.contains(/there are no activities/i).should('not.exist')
+    cy.contains(/soccer/i).should('be.visible')
   })
 
 })
