@@ -1,3 +1,18 @@
+# Node
 node_modules/
+npm-debug.log
+
+# Cypress artifacts
 cypress/videos/
 cypress/screenshots/
+cypress/reports/
+
+# Generated reports (optional decision)
+cypress/final-reports/
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+
+# Env files (important for real projects)
+.env

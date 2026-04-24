@@ -4,7 +4,13 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "cy:open": "cypress open --e2e --browser chrome",
+    "cy:run": "cypress run --browser chrome",
+    "cy:headed": "cypress run --headed",
+    "report:merge": "npx mochawesome-merge \"cypress/reports/mochawesome*.json\" > cypress/reports/report.json",
+    "report:generate": "powershell -Command \"mkdir -Force cypress/reports/final-reports; npx marge cypress/reports/report.json -f report-$(Get-Date -Format yyyy-MM-dd_HH-mm-ss) -o cypress/reports/final-reports\"",
+    "report:clean": "del cypress\\reports\\mochawesome*.json && del cypress\\reports\\report.json 2>nul",
+    "test:report": "npm run cy:run && npm run report:merge && npm run report:generate && npm run report:clean"
   },
   "repository": {
     "type": "git",
@@ -19,6 +25,9 @@
   },
   "homepage": "https://github.com/valenDanDev/automation-countries-project#readme",
   "devDependencies": {
-    "cypress": "^15.13.1"
+    "cypress": "^15.13.1",
+    "mochawesome": "^7.1.4",
+    "mochawesome-merge": "^5.1.1",
+    "mochawesome-report-generator": "^5.2.0"
   }
 }
