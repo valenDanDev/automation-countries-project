@@ -1,0 +1,10 @@
+{
+  "validActivity": {
+    "name": "testing activity",
+    "duration": "5 minutes",
+    "difficulty": "4",
+    "season": "Autumn",
+    "country": "Brazil",
+    "countryCode": "BRA"
+  }
+}

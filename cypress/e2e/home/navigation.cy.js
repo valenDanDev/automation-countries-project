@@ -1,118 +1,92 @@
+import homePage from '../../pages/homePagePage'
+import detailPage from '../../pages/detailPage'
+
+// mocks
+import { mockCountries } from '../../support/mocks/countriesMocks'
+import { mockActivitiesEmpty } from '../../support/mocks/activitiesMocks'
+import { mockCountryDetail } from '../../support/mocks/countriesMocks'
+
 describe('Country Detail Navigation', () => {
 
-  // 🔹 helper to navigate
-  const goToDetail = () => {
-    cy.contains('h3', 'Colombia')
-      .parents('[class*="card_container"]')
-      .within(() => {
-        cy.contains(/more/i).click()
-      })
-  }
-
   beforeEach(() => {
+    mockCountries([
+      { id: 'COL', name: 'Colombia', continent: 'South America' }
+    ])
 
-    cy.intercept('GET', '**/countries', {
-      statusCode: 200,
-      body: [
-        { id: 'COL', name: 'Colombia', continent: 'South America' }
-      ]
-    }).as('getCountries')
-
-    cy.intercept('GET', '**/activities', {
-      statusCode: 200,
-      body: []
-    }).as('getActivities')
-
+    mockActivitiesEmpty()
   })
 
 
   it('should navigate and display correct country details', () => {
 
-    cy.intercept('GET', '**/countries/country/*', {
-      statusCode: 200,
-      body: [
-        {
-          id: 'COL',
-          name: 'colombia',
-          capital: 'bogotá',
-          population: 53057212,
-          activities: []
-        }
-      ]
-    }).as('getCountryDetail')
+    mockCountryDetail([
+      {
+        id: 'COL',
+        name: 'colombia',
+        capital: 'bogotá',
+        population: 53057212,
+        activities: []
+      }
+    ])
 
-    cy.visit('/home')
+    homePage.visit()
 
-    cy.wait('@getCountries')
-    cy.wait('@getActivities')
+    homePage.goToCountryDetail('Colombia')
 
-    goToDetail()
+    detailPage.shouldBeOnDetailPage('COL')
 
-    cy.url().should('include', '/countries/country/COL')
+    detailPage.waitForDetail()
 
-    cy.wait('@getCountryDetail')
+    detailPage.shouldNotShowLoading()
 
-    cy.contains(/loading/i).should('not.exist')
-
-    cy.contains('h3', /colombia/i).should('be.visible')
-    cy.contains(/code:\s*col/i).should('be.visible')
-    cy.contains(/capital:\s*bogotá/i).should('be.visible')
-    cy.contains(/population/i).should('be.visible')
+    detailPage.shouldDisplayCountry('colombia')
+    detailPage.shouldDisplayCode('col')
+    detailPage.shouldDisplayCapital('bogotá')
+    detailPage.shouldDisplayPopulation()
   })
 
 
   it('should show message when there are no activities', () => {
 
-    cy.intercept('GET', '**/countries/country/*', {
-      statusCode: 200,
-      body: [
-        {
-          id: 'COL',
-          name: 'colombia',
-          activities: []
-        }
-      ]
-    }).as('getCountryDetail')
+    mockCountryDetail([
+      {
+        id: 'COL',
+        name: 'colombia',
+        activities: []
+      }
+    ])
 
-    cy.visit('/home')
+    homePage.visit()
 
-    cy.wait('@getCountries')
-    cy.wait('@getActivities')
+    homePage.goToCountryDetail('Colombia')
 
-    goToDetail()
+    detailPage.waitForDetail()
 
-    cy.wait('@getCountryDetail')
-
-    cy.contains(/there are no activities/i).should('be.visible')
+    detailPage.shouldShowNoActivities()
   })
 
 
   it('should show activities when they exist', () => {
 
-    cy.intercept('GET', '**/countries/country/*', {
-      statusCode: 200,
-      body: [
-        {
-          id: 'COL',
-          name: 'colombia',
-          activities: [
-            { id: 1, name: 'Soccer' } ,{ id: 1, name: 'Music' }
-          ]
-        }
-      ]
-    }).as('getCountryDetail')
+    mockCountryDetail([
+      {
+        id: 'COL',
+        name: 'colombia',
+        activities: [
+          { id: 1, name: 'Soccer' },
+          { id: 2, name: 'Music' }
+        ]
+      }
+    ])
 
-    cy.visit('/home')
+    homePage.visit()
 
-    cy.wait('@getCountries')
-    cy.wait('@getActivities')
+    homePage.goToCountryDetail('Colombia')
 
-    goToDetail()
+    detailPage.waitForDetail()
 
-    cy.wait('@getCountryDetail')
-
-    cy.contains(/there are no activities/i).should('not.exist')
-    cy.contains(/soccer/i).should('be.visible')
+    detailPage.shouldShowActivity('Soccer')
+    detailPage.shouldShowActivity('Music')
   })
 
 })

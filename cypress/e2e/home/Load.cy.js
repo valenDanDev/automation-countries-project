@@ -1,70 +1,56 @@
-describe('Home Page', () => {
+import homePage from '../../pages/homePagePage'
+
+// mocks
+import {
+  mockCountries,
+  mockCountriesError,
+  mockCountriesNetworkError
+} from '../../support/mocks/countriesMocks'
+
+import { mockActivitiesEmpty } from '../../support/mocks/activitiesMocks'
+
+describe('Home Page - API Handling', () => {
+
+  beforeEach(() => {
+    mockActivitiesEmpty()
+  })
 
   // 🔴 1. HTTP error (404)
-it('should show countries error when there are no countries in the API', () => {
+  it('should show countries error when API returns 404', () => {
 
-  cy.intercept('GET', '**/countries', {
-    statusCode: 404
-  }).as('getCountries')
+    mockCountriesError(404)
 
-  // keep other API stable
-  cy.intercept('GET', '**/activities', {
-    statusCode: 200,
-    body: []
-  }).as('getActivities')
+    homePage.visit()
 
-  cy.visit('/home')
-
-  cy.wait('@getCountries')
-  cy.wait('@getActivities')
-
-  cy.contains('404 COUNTRIES NOT FOUND').should('be.visible')
-})
+    homePage.countriesErrorMessage()
+      .should('be.visible')
+  })
 
 
   // 🌐 2. Network failure
   it('should handle backend failure (network error)', () => {
 
-    cy.intercept('GET', '**/countries', {
-      forceNetworkError: true
-    }).as('getCountries')
+    mockCountriesNetworkError()
 
-    cy.intercept('GET', '**/activities', {
-      statusCode: 200,
-      body: []
-    }).as('getActivities')
+    homePage.visit()
 
-    cy.visit('/home')
+    homePage.networkErrorMessage()
+      .should('be.visible')
 
-    cy.wait('@getCountries')
-    cy.wait('@getActivities')
-
-    cy.contains('Error fetching countries').should('be.visible')
-    cy.contains('Colombia').should('not.exist')
+    homePage.shouldNotContainCountry('Colombia')
   })
 
 
   // 🟢 3. Success
   it('should display countries when API succeeds', () => {
 
-    cy.intercept('GET', '**/countries', {
-      statusCode: 200,
-      body: [
-        { name: 'Colombia' }
-      ]
-    }).as('getCountries')
+    mockCountries([
+      { name: 'Colombia' }
+    ])
 
-    cy.intercept('GET', '**/activities', {
-      statusCode: 200,
-      body: []
-    }).as('getActivities')
+    homePage.visit()
 
-    cy.visit('/home')
-
-    cy.wait('@getCountries')
-    cy.wait('@getActivities')
-
-    cy.contains('Colombia').should('be.visible')
+    homePage.shouldContainCountry('Colombia')
   })
 
 })

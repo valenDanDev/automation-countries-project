@@ -1,198 +1,73 @@
-describe('Activities creations', () => {
-it('should create activity successfully', () => {
+import activitiesPage from '../../pages/activitiesPage'
+import { mockCountries } from '../../support/mocks/countriesMocks'
+import {
+  interceptCreateActivitySuccess,
+  spyCreateActivity
+} from '../../support/mocks/activitiesMocks'
+import countries from '../../fixtures/countries.json'
+import activityData from '../../fixtures/activities.json'
 
-      cy.intercept('GET', '**/countries', {
-      statusCode: 200,
-      body: [
-        { id: 'COL', name: 'Colombia', continent: 'South America' }
-      ]
-    }).as('getCountries')
+describe('Activity Creation', () => {
 
-    cy.intercept('GET', '**/activities', {
-      statusCode: 200,
-      body: []
-    }).as('getActivities')
+  const activity = activityData.validActivity
 
-
-const goToDetail = () => {
-  cy.contains('Create activities').click()
-}
-
-      cy.visit('/home')
-
+  beforeEach(() => {
+    mockCountries(countries)
+    activitiesPage.visit()
     cy.wait('@getCountries')
-    cy.wait('@getActivities')
+  })
 
-    goToDetail()
+  it('should create activity successfully', () => {
 
-  // mock countries (needed for select)
-  cy.intercept('GET', '**/countries*', {
-    statusCode: 200,
-    body: [
-      { id: 'BRA', name: 'Brazil', continent: 'South America' }
-    ]
-  }).as('getCountries')
+    interceptCreateActivitySuccess()
 
-  // mock POST
-  cy.intercept('POST', '**/activities/create', {
-    statusCode: 200,
-    body: 'activity created successfully'
-  }).as('createActivity')
+    activitiesPage.createActivity(activity)
 
-  cy.visit('/activitiesCreate')
+    activitiesPage.getSelectedCountry(activity.countryCode)
+      .should('be.visible')
 
-  cy.wait('@getCountries')
+    activitiesPage.submit()
 
-  // fill form
-  cy.get('input[name="name"]').type('testing activity')
-  cy.get('input[name="duration"]').type('5 minutes')
-  cy.get('select[name="dificulty"]').select("4")
+    cy.wait('@createActivity')
 
-  cy.contains('label', 'Season')
-  .parent()
-  .find('select')
-  .select('Autumn')
+    activitiesPage.successMessage()
+      .should('be.visible')
+  })
 
-// select country
-cy.contains('label', 'Countries')
-  .parent()
-  .find('select')
-  .select('Brazil')
-  .trigger('change')
+  it('should not allow create activity due to missing fields', () => {
 
-// assert country is added (IMPORTANT)
-cy.contains('BRA').should('be.visible')
+    spyCreateActivity()
 
-cy.contains('label', 'Season')
-  .parent()
-  .find('select')
-  .should('have.value', 'Autumn')
+    const invalidActivity = {
+      ...activity,
+      duration: ''
+    }
 
-cy.get('input[name="name"]').should('have.value', 'testing activity')
+    activitiesPage.createActivity(invalidActivity)
 
+    activitiesPage.getSelectedCountry(activity.countryCode)
+      .should('be.visible')
 
+    activitiesPage.submit()
 
+    cy.get('@createActivity.all').should('have.length', 0)
 
-  // submit
-  cy.contains(/add activity/i).click()
+    cy.contains(/Ohhh!/i).should('be.visible')
+    cy.contains('Please check and complete all the fields')
+      .should('be.visible')
+  })
 
-  // wait for API
-  cy.wait('@createActivity')
+  it('should remove a country when selecting X', () => {
 
-  // validate success UI
-  cy.contains(/success/i).should('be.visible')
-  cy.contains('activity created succesfully').should('be.visible')
-})
+    activitiesPage.createActivity(activity)
 
-it('should not allow create activity due to missing fields', () => {
+    activitiesPage.getSelectedCountry(activity.countryCode)
+      .should('be.visible')
 
-  // mock countries (needed for select)
-  cy.intercept('GET', '**/countries*', {
-    statusCode: 200,
-    body: [
-      { id: 'BRA', name: 'Brazil', continent: 'South America' }
-    ]
-  }).as('getCountries')
+    activitiesPage.removeCountry(activity.countryCode)
 
-  // mock POST
-  cy.intercept('POST', '**/activities/create', {
-    statusCode: 200,
-    body: 'activity created successfully'
-  }).as('createActivity')
-
-  cy.visit('/activitiesCreate')
-
-  cy.wait('@getCountries')
-
-  // fill form
-  cy.get('input[name="name"]').type('testing activity 2')
-  cy.get('select[name="dificulty"]').select("4")
-
-  cy.contains('label', 'Season')
-  .parent()
-  .find('select')
-  .select('Autumn')
-
-// select country
-cy.contains('label', 'Countries')
-  .parent()
-  .find('select')
-  .select('Brazil')
-  .trigger('change')
-
-// assert country is added (IMPORTANT)
-cy.contains('BRA').should('be.visible')
-
-cy.contains('label', 'Season')
-  .parent()
-  .find('select')
-  .should('have.value', 'Autumn')
-
-cy.get('input[name="name"]').should('have.value', 'testing activity 2')
-
-
-
-
-  // submit
-  cy.contains(/add activity/i).click()
-
-  // assert NO request was made
-cy.get('@createActivity.all').should('have.length', 0)
-
-  // validate  UI
-  cy.contains(/Ohhh!/i).should('be.visible')
-  cy.contains('Please check and complete all the fields').should('be.visible')
-})
-
-
-it('should remove a country when selecting X', () => {
-
-  // mock countries (needed for select)
-  cy.intercept('GET', '**/countries*', {
-    statusCode: 200,
-    body: [
-      { id: 'BRA', name: 'Brazil', continent: 'South America' }
-    ]
-  }).as('getCountries')
-
-  // mock POST
-  cy.intercept('POST', '**/activities/create', {
-    statusCode: 200,
-    body: 'activity created successfully'
-  }).as('createActivity')
-
-  cy.visit('/activitiesCreate')
-
-  cy.wait('@getCountries')
-
-  // fill form
-  cy.get('input[name="name"]').type('testing activity 2')
-  cy.get('select[name="dificulty"]').select("4")
-
-  cy.contains('label', 'Season')
-  .parent()
-  .find('select')
-  .select('Autumn')
-
-// select country
-cy.contains('label', 'Countries')
-  .parent()
-  .find('select')
-  .select('Brazil')
-  .trigger('change')
-
-// assert country is added (IMPORTANT)
-cy.contains('BRA').should('be.visible')
-
-cy.contains('BRA')
-  .parent()
-  .find('input[value="X"]')
-  .click()
-
-
-  // assert country is removed (IMPORTANT)
-cy.contains('BRA').should('not.exist')
-
-})
+    activitiesPage.getSelectedCountry(activity.countryCode)
+      .should('not.exist')
+  })
 
 })

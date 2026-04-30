@@ -1,3 +1,9 @@
+import homePage from '../../pages/homePagePage'
+
+// mocks
+import { mockCountriesList } from '../../support/mocks/countriesMocks'
+import { mockActivitiesEmpty } from '../../support/mocks/activitiesMocks'
+
 describe('Pagination (mocked data)', () => {
 
   const TOTAL = 34
@@ -9,54 +15,49 @@ describe('Pagination (mocked data)', () => {
   const lastPageItems = remaining % PER_PAGE || PER_PAGE
 
   beforeEach(() => {
-    const countries = Array.from({ length: TOTAL }, (_, i) => ({
-      id: `C${i}`,
-      name: `Country ${i}`,
-      continent: 'Test'
-    }))
+    mockCountriesList(TOTAL)
+    mockActivitiesEmpty()
 
-    cy.intercept('GET', '**/countries*', { statusCode: 200, body: countries }).as('getCountries')
-    cy.intercept('GET', '**/activities*', { statusCode: 200, body: [] }).as('getActivities')
-
-    cy.visit('/home')
-    cy.wait('@getCountries')
-    cy.wait('@getActivities')
+    homePage.visit()
   })
 
   it('should handle pagination correctly (dynamic)', () => {
 
     // Page 1
-    cy.get('h3').should('have.length', FIRST_PAGE)
-    cy.contains(new RegExp(`page\\s*1/${TOTAL_PAGES}`, 'i')).should('be.visible')
+    homePage.getCountriesCards()
+      .should('have.length', FIRST_PAGE)
 
-    // Iterate through pages 2..TOTAL_PAGES
+    homePage.paginationLabel()
+      .should('contain', `1/${TOTAL_PAGES}`)
+
+    // Iterate pages
     for (let page = 2; page <= TOTAL_PAGES; page++) {
 
-      cy.get('[class*="Pagination_page_item"]')
-        .contains(new RegExp(`^${page}$`))
-        .click()
+      homePage.goToPage(page)
 
-      cy.contains(new RegExp(`page\\s*${page}/${TOTAL_PAGES}`, 'i')).should('be.visible')
+      homePage.paginationLabel()
+        .should('contain', `${page}/${TOTAL_PAGES}`)
 
-      // Expected items on this page
       const expectedCount =
-        page === 1
-          ? FIRST_PAGE
-          : page === TOTAL_PAGES
-            ? lastPageItems
-            : PER_PAGE
+        page === TOTAL_PAGES
+          ? lastPageItems
+          : PER_PAGE
 
-      cy.get('h3').should('have.length', expectedCount)
+      homePage.getCountriesCards()
+        .should('have.length', expectedCount)
     }
   })
 
+
   it('should navigate with Next and Previous buttons', () => {
 
-    cy.get('[aria-label="Next"]').click()
-    cy.contains(/page\s*2/i).should('be.visible')
+    homePage.clickNext()
+    homePage.paginationLabel()
+      .should('contain', '2')
 
-    cy.get('[aria-label="Previous"]').click()
-    cy.contains(/page\s*1/i).should('be.visible')
+    homePage.clickPrevious()
+    homePage.paginationLabel()
+      .should('contain', '1')
   })
 
 })
